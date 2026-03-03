@@ -4,6 +4,7 @@ use super::{Info, Item, Pass, Ship};
 pub struct PassFour {}
 
 mod capacitor;
+mod damage;
 
 impl Item {
     pub fn add_attribute(&mut self, attribute_id: i32, base_value: f64, value: f64) {
@@ -17,5 +18,6 @@ impl Item {
 impl Pass for PassFour {
     fn pass(info: &impl Info, ship: &mut Ship) {
         capacitor::attribute_capacitor_depletes_in(info, ship);
+        damage::attribute_damage_per_second(info, ship);
     }
 }
