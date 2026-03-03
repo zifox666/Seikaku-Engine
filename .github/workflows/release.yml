@@ -166,6 +166,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Generate version
+        id: version
+        run: |
+          DATE=$(date +%Y%m%d)
+          SHA=$(git rev-parse --short HEAD)
+          VERSION="${DATE}-${SHA}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Generated version: ${VERSION}"
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -196,7 +205,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          tag_name: release-${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          draft: false
           files: |
             seikaku-engine-windows-x86_64.zip
             seikaku-engine-macos-universal.tar.gz
