@@ -1,9 +1,5 @@
 mod info;
-mod protobuf;
+mod sqlite;
 
 pub use info::{InfoMain, InfoNameMain};
-pub use protobuf::Data;
-
-pub mod esf_data {
-    include!(concat!(env!("OUT_DIR"), "/esf.rs"));
-}
+pub use sqlite::Data;

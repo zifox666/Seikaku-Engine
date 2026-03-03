@@ -4,13 +4,13 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-use esf_dogma_engine::calculate;
-use esf_dogma_engine::calculate::item::Item;
-use esf_dogma_engine::data_types::EsfSlotType;
-use esf_dogma_engine::data_types::EsfState;
-use esf_dogma_engine::eft;
-use esf_dogma_engine::info::Info;
-use esf_dogma_engine::rust;
+use seikaku_engine::calculate;
+use seikaku_engine::calculate::item::Item;
+use seikaku_engine::data_types::EsfSlotType;
+use seikaku_engine::data_types::EsfState;
+use seikaku_engine::eft;
+use seikaku_engine::info::Info;
+use seikaku_engine::rust;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -169,8 +169,9 @@ struct Args {
     #[clap(short = 'f', long)]
     skills_filename: Option<PathBuf>,
 
-    #[clap(short, long, default_value = "node_modules/@eveshipfit/data/dist/sde")]
-    protobuf_location: PathBuf,
+    /// Path to the SDE SQLite database file
+    #[clap(short = 'd', long)]
+    sqlite_path: PathBuf,
 }
 
 fn get_attribute_by_name(
@@ -227,7 +228,7 @@ pub fn main() {
         }
     };
 
-    let data = rust::Data::new(&args.protobuf_location);
+    let data = rust::Data::new(&args.sqlite_path);
     let info_name = rust::InfoNameMain::new(&data);
 
     let mut fit = eft::load_eft(&info_name, &eft).unwrap().esf_fit;

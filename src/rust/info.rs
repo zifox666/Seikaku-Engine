@@ -23,7 +23,7 @@ impl Info for InfoMain<'_> {
                 for attribute in &type_dogma.dogma_attributes {
                     attributes.push(data_types::TypeDogmaAttribute {
                         attributeID: attribute.attribute_id,
-                        value: attribute.value as f64,
+                        value: attribute.value,
                     });
                 }
                 attributes
@@ -39,7 +39,7 @@ impl Info for InfoMain<'_> {
                 stackable: false,
             },
             Some(attribute) => data_types::DogmaAttribute {
-                defaultValue: attribute.default_value as f64,
+                defaultValue: attribute.default_value,
                 highIsGood: attribute.high_is_good,
                 stackable: attribute.stackable,
             },
@@ -129,10 +129,10 @@ impl Info for InfoMain<'_> {
             Some(type_) => data_types::Type {
                 groupID: type_.group_id,
                 categoryID: type_.category_id,
-                capacity: type_.capacity.map(|x| x as f64),
-                mass: type_.mass.map(|x| x as f64),
-                volume: type_.volume.map(|x| x as f64),
-                radius: type_.radius.map(|x| x as f64),
+                capacity: type_.capacity,
+                mass: type_.mass,
+                volume: type_.volume,
+                radius: type_.radius,
             },
         }
     }
@@ -185,10 +185,10 @@ impl InfoName for InfoNameMain<'_> {
             Some(type_) => data_types::Type {
                 groupID: type_.group_id,
                 categoryID: type_.category_id,
-                capacity: type_.capacity.map(|x| x as f64),
-                mass: type_.mass.map(|x| x as f64),
-                volume: type_.volume.map(|x| x as f64),
-                radius: type_.radius.map(|x| x as f64),
+                capacity: type_.capacity,
+                mass: type_.mass,
+                volume: type_.volume,
+                radius: type_.radius,
             },
         }
     }
@@ -204,13 +204,14 @@ impl InfoName for InfoNameMain<'_> {
 }
 
 impl InfoMain<'_> {
-    pub fn new<'a>(fit: data_types::EsfFit, skills: BTreeMap<i32, i32>, data: &Data) -> InfoMain {
+    pub fn new(fit: data_types::EsfFit, skills: BTreeMap<i32, i32>, data: &Data) -> InfoMain<'_> {
         InfoMain { fit, skills, data }
     }
 }
 
 impl InfoNameMain<'_> {
-    pub fn new<'a>(data: &Data) -> InfoNameMain {
+    pub fn new(data: &Data) -> InfoNameMain<'_> {
         InfoNameMain { data }
     }
 }
+

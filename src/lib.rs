@@ -10,3 +10,6 @@ mod wasm;
 
 #[cfg(feature = "rust")]
 pub mod rust;
+
+#[cfg(feature = "rust")]
+pub mod ffi;
