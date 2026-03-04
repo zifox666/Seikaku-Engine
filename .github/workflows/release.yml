@@ -295,6 +295,8 @@ jobs:
       - build-android
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -325,8 +327,31 @@ jobs:
           # Android
           cp artifacts/android/libseikaku_engine-android-jniLibs.zip release/ || true
 
+      - name: Generate tag if needed
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ -z "${{ github.event.inputs.tag_name }}" ]; then
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            TAG="v$(date +%Y%m%d)-${SHORT_SHA}"
+          else
+            TAG="${{ github.event.inputs.tag_name }}"
+          fi
+          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag "$TAG" || echo "Tag already exists"
+          git push origin "$TAG" || echo "Failed to push tag (may already exist)"
+
+      - name: Set tag from ref
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          TAG="${{ github.ref }}"
+          TAG="${TAG#refs/tags/}"
+          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           generate_release_notes: true
           files: release/*
