@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_repr::*;
 
 #[allow(non_snake_case)]
@@ -91,7 +91,7 @@ pub struct DogmaEffect {
     pub modifierInfo: Vec<DogmaEffectModifierInfo>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum EsfState {
     Passive,
     Online,
@@ -99,7 +99,7 @@ pub enum EsfState {
     Overload,
 }
 
-#[derive(Deserialize, Debug, Eq, Hash, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, Hash, PartialEq)]
 pub enum EsfSlotType {
     High,
     Medium,
@@ -109,18 +109,18 @@ pub enum EsfSlotType {
     Service,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EsfCharge {
     pub type_id: i32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EsfSlot {
     pub r#type: EsfSlotType,
     pub index: i32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EsfModule {
     pub type_id: i32,
     pub slot: EsfSlot,
@@ -128,13 +128,13 @@ pub struct EsfModule {
     pub charge: Option<EsfCharge>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EsfDrone {
     pub type_id: i32,
     pub state: EsfState,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EsfFit {
     pub ship_type_id: i32,
     pub modules: Vec<EsfModule>,

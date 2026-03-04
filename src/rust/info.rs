@@ -204,13 +204,13 @@ impl InfoName for InfoNameMain<'_> {
 }
 
 impl InfoMain<'_> {
-    pub fn new<'a>(fit: data_types::EsfFit, skills: BTreeMap<i32, i32>, data: &Data) -> InfoMain {
+    pub fn new<'a>(fit: data_types::EsfFit, skills: BTreeMap<i32, i32>, data: &'a Data) -> InfoMain<'a> {
         InfoMain { fit, skills, data }
     }
 }
 
 impl InfoNameMain<'_> {
-    pub fn new<'a>(data: &Data) -> InfoNameMain {
+    pub fn new<'a>(data: &'a Data) -> InfoNameMain<'a> {
         InfoNameMain { data }
     }
 }

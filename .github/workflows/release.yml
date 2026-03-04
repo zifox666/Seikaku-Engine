@@ -1,48 +1,332 @@
-name: Release
+name: Build & Release
 
 on:
-  release:
-    types:
-    - published
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
-  registries:
-    name: Publish to GitHub NPM
-    runs-on: ubuntu-latest
-
+  # ─────────────────────────────────────────────
+  # Windows x86_64
+  # ─────────────────────────────────────────────
+  build-windows:
+    name: Windows (x86_64)
+    runs-on: windows-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Install Node toolchain
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
 
-    - name: Install Rust toolchain
-      uses: actions-rust-lang/setup-rust-toolchain@v1
-      with:
-        toolchain: stable
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Install wasm-pack
-      run: |
-        cargo install wasm-pack
+      - name: Build Flutter library
+        run: cargo build --release --no-default-features --features flutter,eft
 
-    - name: Set version
-      run: |
-        # Remove the "v" from the version.
-        VERSION=$(echo ${{ github.ref_name }} | cut -b2-)
-        echo "Version: ${VERSION}"
+      - name: Build CLI
+        run: cargo build --release --no-default-features --features rust,eft
 
-        sed -i 's/version = "0.0.0-git"/version = "'${VERSION}'"/' Cargo.toml
+      - name: Prepare artifacts
+        shell: bash
+        run: |
+          mkdir -p windows-dist
+          cp target/release/seikaku_engine.dll windows-dist/ || true
+          cp target/release/seikaku_engine.dll.lib windows-dist/ || true
+          cp target/release/seikaku-cli.exe windows-dist/ || true
 
-    - name: Create NPM package
-      run: |
-        wasm-pack build --release -- --no-default-features --features wasm,eft
-        sed -i s%esf-dogma-engine%@eveshipfit/dogma-engine% pkg/package.json
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64
+          path: windows-dist/
 
-    - uses: JS-DevTools/npm-publish@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        registry: "https://npm.pkg.github.com"
-        package: pkg/package.json
+  # ─────────────────────────────────────────────
+  # Linux x86_64
+  # ─────────────────────────────────────────────
+  build-linux:
+    name: Linux (x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build Flutter library
+        run: cargo build --release --no-default-features --features flutter,eft
+
+      - name: Build CLI
+        run: cargo build --release --no-default-features --features rust,eft
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p linux-dist
+          cp target/release/libseikaku_engine.so linux-dist/ || true
+          cp target/release/seikaku-cli linux-dist/ || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: linux-dist/
+
+  # ─────────────────────────────────────────────
+  # macOS universal (x86_64 + aarch64)
+  # ─────────────────────────────────────────────
+  build-macos:
+    name: macOS (universal)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build macOS x86_64
+        run: |
+          cargo build --release \
+            --target x86_64-apple-darwin \
+            --no-default-features --features flutter,eft
+
+      - name: Build macOS aarch64
+        run: |
+          cargo build --release \
+            --target aarch64-apple-darwin \
+            --no-default-features --features flutter,eft
+
+      - name: Create universal dylib
+        run: |
+          lipo -create \
+            target/x86_64-apple-darwin/release/libseikaku_engine.dylib \
+            target/aarch64-apple-darwin/release/libseikaku_engine.dylib \
+            -output libseikaku_engine-macos-universal.dylib
+
+      - name: Create universal static lib
+        run: |
+          lipo -create \
+            target/x86_64-apple-darwin/release/libseikaku_engine.a \
+            target/aarch64-apple-darwin/release/libseikaku_engine.a \
+            -output libseikaku_engine-macos-universal.a
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p macos-dist
+          cp libseikaku_engine-macos-universal.dylib macos-dist/
+          cp libseikaku_engine-macos-universal.a macos-dist/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: macos-dist/
+
+  # ─────────────────────────────────────────────
+  # iOS device + simulator (XCFramework-ready)
+  # ─────────────────────────────────────────────
+  build-ios:
+    name: iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: >-
+            aarch64-apple-ios,
+            aarch64-apple-ios-sim,
+            x86_64-apple-ios
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-ios-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build iOS device (aarch64)
+        run: |
+          cargo build --release \
+            --target aarch64-apple-ios \
+            --no-default-features --features flutter,eft
+
+      - name: Build iOS Simulator (aarch64)
+        run: |
+          cargo build --release \
+            --target aarch64-apple-ios-sim \
+            --no-default-features --features flutter,eft
+
+      - name: Build iOS Simulator (x86_64)
+        run: |
+          cargo build --release \
+            --target x86_64-apple-ios \
+            --no-default-features --features flutter,eft
+
+      - name: Create Simulator universal static lib
+        run: |
+          lipo -create \
+            target/aarch64-apple-ios-sim/release/libseikaku_engine.a \
+            target/x86_64-apple-ios/release/libseikaku_engine.a \
+            -output libseikaku_engine-ios-sim-universal.a
+
+      - name: Assemble XCFramework
+        run: |
+          xcodebuild -create-xcframework \
+            -library target/aarch64-apple-ios/release/libseikaku_engine.a \
+            -library libseikaku_engine-ios-sim-universal.a \
+            -output SeikakuEngine.xcframework
+          zip -r SeikakuEngine.xcframework.zip SeikakuEngine.xcframework
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p ios-dist
+          cp target/aarch64-apple-ios/release/libseikaku_engine.a ios-dist/
+          cp libseikaku_engine-ios-sim-universal.a ios-dist/
+          cp SeikakuEngine.xcframework.zip ios-dist/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: ios-dist/
+
+  # ─────────────────────────────────────────────
+  # Android (arm64-v8a / armeabi-v7a / x86_64 / x86)
+  # ─────────────────────────────────────────────
+  build-android:
+    name: Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: >-
+            aarch64-linux-android,
+            armv7-linux-androideabi,
+            x86_64-linux-android,
+            i686-linux-android
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-android-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      - name: Set Android NDK root
+        run: |
+          echo "ANDROID_NDK_ROOT=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+
+      - name: Build all Android ABIs
+        run: |
+          cargo ndk \
+            -t arm64-v8a \
+            -t armeabi-v7a \
+            -t x86_64 \
+            -t x86 \
+            -o ./android-jniLibs \
+            build --release --no-default-features --features flutter,eft
+
+      - name: Package jniLibs
+        run: |
+          zip -r libseikaku_engine-android-jniLibs.zip android-jniLibs/
+          mkdir -p android-dist
+          cp libseikaku_engine-android-jniLibs.zip android-dist/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: android-dist/
+
+  # ─────────────────────────────────────────────
+  # GitHub Release
+  # ─────────────────────────────────────────────
+  release:
+    name: GitHub Release
+    needs:
+      - build-windows
+      - build-linux
+      - build-macos
+      - build-ios
+      - build-android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+
+          # Windows
+          cp artifacts/windows-x86_64/seikaku_engine.dll release/seikaku_engine-windows-x86_64.dll || true
+          cp artifacts/windows-x86_64/seikaku_engine.dll.lib release/seikaku_engine-windows-x86_64.dll.lib || true
+          cp artifacts/windows-x86_64/seikaku-cli.exe release/seikaku-cli-windows-x86_64.exe || true
+
+          # Linux
+          cp artifacts/linux-x86_64/libseikaku_engine.so release/libseikaku_engine-linux-x86_64.so || true
+          cp artifacts/linux-x86_64/seikaku-cli release/seikaku-cli-linux-x86_64 || true
+
+          # macOS
+          cp artifacts/macos-universal/libseikaku_engine-macos-universal.dylib release/ || true
+          cp artifacts/macos-universal/libseikaku_engine-macos-universal.a release/ || true
+
+          # iOS
+          cp artifacts/ios/libseikaku_engine.a release/libseikaku_engine-ios-device.a || true
+          cp artifacts/ios/libseikaku_engine-ios-sim-universal.a release/ || true
+          cp artifacts/ios/SeikakuEngine.xcframework.zip release/ || true
+
+          # Android
+          cp artifacts/android/libseikaku_engine-android-jniLibs.zip release/ || true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release/*

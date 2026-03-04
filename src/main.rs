@@ -4,13 +4,13 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-use esf_dogma_engine::calculate;
-use esf_dogma_engine::calculate::item::Item;
-use esf_dogma_engine::data_types::EsfSlotType;
-use esf_dogma_engine::data_types::EsfState;
-use esf_dogma_engine::eft;
-use esf_dogma_engine::info::Info;
-use esf_dogma_engine::rust;
+use seikaku_engine::calculate;
+use seikaku_engine::calculate::item::Item;
+use seikaku_engine::data_types::EsfSlotType;
+use seikaku_engine::data_types::EsfState;
+use seikaku_engine::eft;
+use seikaku_engine::info::Info;
+use seikaku_engine::rust;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -169,7 +169,7 @@ struct Args {
     #[clap(short = 'f', long)]
     skills_filename: Option<PathBuf>,
 
-    #[clap(short, long, default_value = "node_modules/@eveshipfit/data/dist/sde")]
+    #[clap(short, long, default_value = "data")]
     protobuf_location: PathBuf,
 }
 
