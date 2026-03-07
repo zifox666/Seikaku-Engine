@@ -119,6 +119,8 @@ pub fn load_eft(info: &impl InfoName, eft: &String) -> Result<EftFit, String> {
             ship_type_id: info.type_name_to_id(ship_type_name),
             modules: Vec::new(),
             drones: Vec::new(),
+            implants: Vec::new(),
+            boosters: Vec::new(),
         },
         cargo: Vec::new(),
     };

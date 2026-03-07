@@ -135,10 +135,26 @@ pub struct EsfDrone {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct EsfImplant {
+    pub type_id: i32,
+    pub index: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EsfBooster {
+    pub type_id: i32,
+    pub index: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EsfFit {
     pub ship_type_id: i32,
     pub modules: Vec<EsfModule>,
     pub drones: Vec<EsfDrone>,
+    #[serde(default)]
+    pub implants: Vec<EsfImplant>,
+    #[serde(default)]
+    pub boosters: Vec<EsfBooster>,
 }
 
 impl From<i32> for DogmaEffectModifierInfoDomain {

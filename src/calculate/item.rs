@@ -31,6 +31,8 @@ pub enum EffectOperator {
 pub enum Object {
     Ship,
     Item(usize),
+    Implant(usize),
+    Booster(usize),
     Charge(usize),
     Skill(usize),
     Char,
@@ -64,6 +66,8 @@ pub enum SlotType {
     Service,
     DroneBay,
     Charge,
+    Implant,
+    Booster,
     None,
 }
 
@@ -158,6 +162,36 @@ impl Item {
             },
             charge: None,
             state,
+            max_state: EffectCategory::Active,
+            attributes: BTreeMap::new(),
+            effects: Vec::new(),
+        }
+    }
+
+    pub fn new_implant(type_id: i32, index: i32) -> Item {
+        Item {
+            type_id,
+            slot: Slot {
+                r#type: SlotType::Implant,
+                index: Some(index),
+            },
+            charge: None,
+            state: EffectCategory::Active,
+            max_state: EffectCategory::Active,
+            attributes: BTreeMap::new(),
+            effects: Vec::new(),
+        }
+    }
+
+    pub fn new_booster(type_id: i32, index: i32) -> Item {
+        Item {
+            type_id,
+            slot: Slot {
+                r#type: SlotType::Booster,
+                index: Some(index),
+            },
+            charge: None,
+            state: EffectCategory::Active,
             max_state: EffectCategory::Active,
             attributes: BTreeMap::new(),
             effects: Vec::new(),

@@ -24,6 +24,8 @@ struct Cache {
     structure: BTreeMap<i32, f64>,
     target: BTreeMap<i32, f64>,
     items: BTreeMap<usize, BTreeMap<i32, f64>>,
+    implants: BTreeMap<usize, BTreeMap<i32, f64>>,
+    boosters: BTreeMap<usize, BTreeMap<i32, f64>>,
     charge: BTreeMap<usize, BTreeMap<i32, f64>>,
     skills: BTreeMap<usize, BTreeMap<i32, f64>>,
 }
@@ -46,6 +48,8 @@ impl Attribute {
             Object::Structure => cache.structure.get(&attribute_id),
             Object::Target => cache.target.get(&attribute_id),
             Object::Item(index) => cache.items.get(&index).and_then(|x| x.get(&attribute_id)),
+            Object::Implant(index) => cache.implants.get(&index).and_then(|x| x.get(&attribute_id)),
+            Object::Booster(index) => cache.boosters.get(&index).and_then(|x| x.get(&attribute_id)),
             Object::Charge(index) => cache.charge.get(&index).and_then(|x| x.get(&attribute_id)),
             Object::Skill(index) => cache.skills.get(&index).and_then(|x| x.get(&attribute_id)),
         };
@@ -67,6 +71,8 @@ impl Attribute {
                 let source = match effect.source {
                     Object::Ship => &ship.hull,
                     Object::Item(index) => &ship.items[index],
+                    Object::Implant(index) => &ship.implants[index],
+                    Object::Booster(index) => &ship.boosters[index],
                     Object::Charge(index) => match &ship.items[index].charge {
                         Some(charge) => &*charge,
                         None => continue,
@@ -206,6 +212,26 @@ impl Attribute {
                     .unwrap()
                     .insert(attribute_id, current_value);
             }
+            Object::Implant(index) => {
+                if !cache.implants.contains_key(&index) {
+                    cache.implants.insert(index, BTreeMap::new());
+                }
+                cache
+                    .implants
+                    .get_mut(&index)
+                    .unwrap()
+                    .insert(attribute_id, current_value);
+            }
+            Object::Booster(index) => {
+                if !cache.boosters.contains_key(&index) {
+                    cache.boosters.insert(index, BTreeMap::new());
+                }
+                cache
+                    .boosters
+                    .get_mut(&index)
+                    .unwrap()
+                    .insert(attribute_id, current_value);
+            }
             Object::Charge(index) => {
                 if !cache.charge.contains_key(&index) {
                     cache.charge.insert(index, BTreeMap::new());
@@ -276,6 +302,12 @@ impl Pass for PassThree {
         for (index, skill) in ship.skills.iter().enumerate() {
             skill.calculate_values(info, ship, &mut cache, Object::Skill(index));
         }
+        for (index, implant) in ship.implants.iter().enumerate() {
+            implant.calculate_values(info, ship, &mut cache, Object::Implant(index));
+        }
+        for (index, booster) in ship.boosters.iter().enumerate() {
+            booster.calculate_values(info, ship, &mut cache, Object::Booster(index));
+        }
 
         ship.hull.store_cached_values(info, &cache.hull);
         ship.char.store_cached_values(info, &cache.char);
@@ -289,6 +321,12 @@ impl Pass for PassThree {
         }
         for (index, skill) in ship.skills.iter_mut().enumerate() {
             skill.store_cached_values(info, &cache.skills[&index]);
+        }
+        for (index, implant) in ship.implants.iter_mut().enumerate() {
+            implant.store_cached_values(info, &cache.implants[&index]);
+        }
+        for (index, booster) in ship.boosters.iter_mut().enumerate() {
+            booster.store_cached_values(info, &cache.boosters[&index]);
         }
     }
 }

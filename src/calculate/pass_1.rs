@@ -95,5 +95,17 @@ impl Pass for PassOne {
 
             ship.items.push(item);
         }
+
+        for implant in &info.fit().implants {
+            let mut item = Item::new_implant(implant.type_id, implant.index);
+            item.set_attributes(info);
+            ship.implants.push(item);
+        }
+
+        for booster in &info.fit().boosters {
+            let mut item = Item::new_booster(booster.type_id, booster.index);
+            item.set_attributes(info);
+            ship.boosters.push(item);
+        }
     }
 }

@@ -4,3 +4,4 @@ __pycache__/
 /pkg/
 /target/
 /package-lock.json
+/copilot/*

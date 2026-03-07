@@ -208,12 +208,20 @@ impl Pass for PassTwo {
         for (index, skill) in ship.skills.iter_mut().enumerate() {
             skill.collect_effects(info, Object::Skill(index), &mut effects);
         }
+        for (index, implant) in ship.implants.iter_mut().enumerate() {
+            implant.collect_effects(info, Object::Implant(index), &mut effects);
+        }
+        for (index, booster) in ship.boosters.iter_mut().enumerate() {
+            booster.collect_effects(info, Object::Booster(index), &mut effects);
+        }
 
         /* Depending on the modifier, move the effects to the correct attribute. */
         for effect in effects {
             let source_type_id = match effect.source {
                 Object::Ship => info.fit().ship_type_id,
                 Object::Item(index) => ship.items[index].type_id,
+                Object::Implant(index) => ship.implants[index].type_id,
+                Object::Booster(index) => ship.boosters[index].type_id,
                 Object::Charge(index) => ship.items[index].charge.as_ref().unwrap().type_id,
                 Object::Skill(index) => ship.skills[index].type_id,
                 Object::Char => 1373,
@@ -229,6 +237,8 @@ impl Pass for PassTwo {
                         Object::Char => &mut ship.char,
                         Object::Structure => &mut ship.structure,
                         Object::Item(index) => &mut ship.items[index],
+                        Object::Implant(index) => &mut ship.implants[index],
+                        Object::Booster(index) => &mut ship.boosters[index],
                         Object::Charge(index) => ship.items[index].charge.as_mut().unwrap(),
                         Object::Skill(index) => &mut ship.skills[index],
                         Object::Target => &mut ship.target,
@@ -284,6 +294,13 @@ impl Pass for PassTwo {
                             }
                         }
                     }
+
+                    for item in &mut ship.implants {
+                        let r#type = info.get_type(item.type_id);
+                        if r#type.groupID == group_id {
+                            item.add_effect(info, effect.target_attribute_id, category_id, &effect);
+                        }
+                    }
                 }
                 Modifier::OwnerRequiredSkillModifier(skill_type_id)
                 | Modifier::LocationRequiredSkillModifier(skill_type_id) => {
@@ -332,6 +349,20 @@ impl Pass for PassTwo {
                                         &effect,
                                     );
                                 }
+                            }
+                        }
+
+                        for item in &mut ship.implants {
+                            if item.attributes.contains_key(attribute_skill_id)
+                                && item.attributes[attribute_skill_id].base_value
+                                    == skill_type_id as f64
+                            {
+                                item.add_effect(
+                                    info,
+                                    effect.target_attribute_id,
+                                    category_id,
+                                    &effect,
+                                );
                             }
                         }
                     }
