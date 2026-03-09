@@ -36,15 +36,19 @@ jobs:
       - name: Build Flutter library
         run: cargo build --release --no-default-features --features flutter,eft
 
+      - name: Save Flutter DLL before CLI build
+        shell: bash
+        run: |
+          mkdir -p windows-dist
+          cp target/release/seikaku_engine.dll windows-dist/
+          cp target/release/seikaku_engine.dll.lib windows-dist/ || true
+
       - name: Build CLI
         run: cargo build --release --no-default-features --features rust,eft
 
       - name: Prepare artifacts
         shell: bash
         run: |
-          mkdir -p windows-dist
-          cp target/release/seikaku_engine.dll windows-dist/ || true
-          cp target/release/seikaku_engine.dll.lib windows-dist/ || true
           cp target/release/seikaku-cli.exe windows-dist/ || true
 
       - name: Upload artifacts
@@ -77,13 +81,16 @@ jobs:
       - name: Build Flutter library
         run: cargo build --release --no-default-features --features flutter,eft
 
+      - name: Save Flutter .so before CLI build
+        run: |
+          mkdir -p linux-dist
+          cp target/release/libseikaku_engine.so linux-dist/
+
       - name: Build CLI
         run: cargo build --release --no-default-features --features rust,eft
 
       - name: Prepare artifacts
         run: |
-          mkdir -p linux-dist
-          cp target/release/libseikaku_engine.so linux-dist/ || true
           cp target/release/seikaku-cli linux-dist/ || true
 
       - name: Upload artifacts
